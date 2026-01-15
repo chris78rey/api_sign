@@ -1,7 +1,7 @@
-PS G:\opencode\proyectos_opencode\firmas> docker compose up build -d
-no such service: build
-PS G:\opencode\proyectos_opencode\firmas> docker-compose up build -d
-no such service: build
-PS G:\opencode\proyectos_opencode\firmas> docker compose up --build -d
-unable to get image 'postgres:16-alpine': error during connect: in the default daemon configuration on Windows, the docker client must be run with elevated privileges to connect: Get "http://%2F%2F.%2Fpipe%2Fdocker_engine/v1.51/images/postgres:16-alpine/json": open //./pipe/docker_engine: El sistema no puede encontrar el archivo especificado.
+
+PS G:\opencode\proyectos_opencode\firmas> curl.exe -X POST "http://localhost:3000/api/auth/register" `
+>>   -H "Content-Type: application/json" `
+>>   -d "{\"organizationName\":\"Org Demo\",\"email\":\"admin@demo.com\",\"password\":\"Passw0rd!\"}"
+{"ok":false,"code":"INTERNAL_ERROR","message":"Internal Server Error"}curl: (3) URL rejected: Port number was not a decimal number between 0 and 65535
+curl: (3) URL rejected: Port number was not a decimal number between 0 and 65535
 PS G:\opencode\proyectos_opencode\firmas>
