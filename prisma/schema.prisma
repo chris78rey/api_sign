@@ -1,0 +1,97 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id                    String    @id @default(uuid())
+  name                  String
+  evidenceRequiredDefault Boolean   @default(false)
+  requests              Request[]
+  users                 User[]
+  createdAt             DateTime  @default(now())
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  password       String
+  role           UserRole     @default(USER)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model Request {
+  id                  String         @id @default(uuid())
+  externalRequestId   String?        @unique
+  clientTrxId         String?        @unique
+  status              RequestStatus  @default(CREATED)
+  organizationId      String
+  organization        Organization   @relation(fields: [organizationId], references: [id])
+  evidenceRequired    Boolean        @default(false)
+  signatories         Signatory[]
+  events              RequestEvent[]
+
+  @@index([organizationId, createdAt])
+  sourceDocumentPath  String?
+  finalDocumentPath   String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model Signatory {
+  id          String   @id @default(uuid())
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id])
+  name        String
+  email       String
+  phone       String?
+  dni         String
+  evidencePath String?
+  x           Int?
+  y           Int?
+  page        Int?
+  createdAt   DateTime @default(now())
+}
+
+model RequestEvent {
+  id            String           @id @default(uuid())
+  requestId      String
+  request        Request          @relation(fields: [requestId], references: [id])
+  organizationId String
+  actorUserId    String?
+  type           RequestEventType
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([requestId, createdAt])
+}
+
+enum RequestStatus {
+  CREATED
+  DOCUMENT_UPLOADED
+  SIGNATORIES_ADDED
+  SENT
+  SIGNED
+  FAILED
+}
+
+enum RequestEventType {
+  CREATED
+  DOCUMENT_UPLOADED
+  SIGNATORIES_ADDED
+  SENT
+  SIGNED
+  FAILED
+}
