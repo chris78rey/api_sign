@@ -42,9 +42,9 @@ export class SendService {
     }
 
     const client = getOmniSwitchClient();
-    const providerRes = await client.post<{ IdSolicitud: string }, { ok: boolean }>({
-      endpoint: '/SolicitudeSend',
-      payload: { IdSolicitud: request.externalRequestId },
+    const providerRes = await client.post<{ IdSolicitud: string; IDSolicitude?: string }, { ok: boolean }>({
+      endpoint: '/api/v1/SolicitudeSend',
+      payload: { IdSolicitud: request.externalRequestId, IDSolicitude: request.externalRequestId },
     });
 
     if (!providerRes.ok) {

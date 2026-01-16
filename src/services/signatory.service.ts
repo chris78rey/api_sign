@@ -20,6 +20,53 @@ type CreateSignatoryArgs = {
   evidenceFile?: { mimetype: string; size: number; path: string };
 };
 
+function parseNumberEnv(name: string, defaultValue: number): number {
+  const raw = process.env[name];
+  if (raw === undefined) return defaultValue;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return defaultValue;
+  return n;
+}
+
+function splitFullName(fullName: string): {
+  primerNombre: string;
+  segunNombre?: string;
+  primerApellido: string;
+  segApellido?: string;
+} {
+  const parts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter((p) => p.length > 0);
+
+  if (parts.length === 0) {
+    return { primerNombre: 'N/A', primerApellido: 'N/A' };
+  }
+
+  if (parts.length === 1) {
+    return { primerNombre: parts[0], primerApellido: parts[0] };
+  }
+
+  if (parts.length === 2) {
+    return { primerNombre: parts[0], primerApellido: parts[1] };
+  }
+
+  if (parts.length === 3) {
+    return { primerNombre: parts[0], segunNombre: parts[1], primerApellido: parts[2] };
+  }
+
+  const primerNombre = parts[0];
+  const segunNombre = parts[1];
+  const primerApellido = parts[2];
+  const segApellido = parts.slice(3).join(' ');
+
+  return { primerNombre, segunNombre, primerApellido, segApellido };
+}
+
+function isRealOmniSwitchMode(): boolean {
+  return (process.env.OMNISWITCH_MODE ?? 'mock').toLowerCase() === 'real';
+}
+
 export class SignatoryService {
   public static async addSignatory(args: CreateSignatoryArgs): Promise<{ id: string }> {
     const prisma = getPrismaClient();
@@ -87,32 +134,61 @@ export class SignatoryService {
       },
     });
 
+    const existingSignatories = await prisma.signatory.count({ where: { requestId: request.id } });
+    const firmaPrincipal = existingSignatories <= 1 ? 1 : 0;
+
+    const nameParts = splitFullName(created.name);
+
+    const celular = created.phone ?? '';
+    if (isRealOmniSwitchMode() && celular.trim().length === 0) {
+      throw new ApiError({ statusCode: 400, code: 'PHONE_REQUIRED', message: 'phone is required for OmniSwitch signatory creation' });
+    }
+
+    const idPais = Math.trunc(parseNumberEnv('OMNISWITCH_DEFAULT_COUNTRY_ID', 0));
+    const idProvincia = Math.trunc(parseNumberEnv('OMNISWITCH_DEFAULT_PROVINCE_ID', 0));
+    const idCiudad = Math.trunc(parseNumberEnv('OMNISWITCH_DEFAULT_CITY_ID', 0));
+    const address = process.env.OMNISWITCH_DEFAULT_ADDRESS ?? 'Unknown';
+
     const client = getOmniSwitchClient();
     const providerRes = await client.post<
       {
         IdSolicitud: string;
-        Name: string;
+        IDSolicitude?: string;
+        PrimerNombre: string;
+        SegunNombre?: string;
+        PrimerApellido: string;
+        SegApellido?: string;
+        Celular: string;
         Email: string;
-        Phone?: string;
-        Dni: string;
-        EvidenceBase64?: string;
-        x: number;
-        y: number;
-        page: number;
+        FirmaPrincipal: number;
+        IdPais: number;
+        IdProvincia: number;
+        IdCiudad: number;
+        address: string;
+        DocumentoBase64?: string;
+        IDClienteTrx?: string;
+        Cedula?: string;
       },
-      { ok: boolean }
+      { resultCode?: number; resultText?: string }
     >({
-      endpoint: '/SolicitudeCreateSignatory',
+      endpoint: '/api/v1/SolicitudeCreateSignatory',
       payload: {
         IdSolicitud: request.externalRequestId,
-        Name: created.name,
+        IDSolicitude: request.externalRequestId,
+        PrimerNombre: nameParts.primerNombre,
+        SegunNombre: nameParts.segunNombre,
+        PrimerApellido: nameParts.primerApellido,
+        SegApellido: nameParts.segApellido,
+        Celular: celular,
         Email: created.email,
-        Phone: created.phone ?? undefined,
-        Dni: created.dni,
-        EvidenceBase64: evidenceBase64,
-        x: created.x ?? x,
-        y: created.y ?? y,
-        page: created.page ?? page,
+        FirmaPrincipal: firmaPrincipal,
+        IdPais: idPais,
+        IdProvincia: idProvincia,
+        IdCiudad: idCiudad,
+        address,
+        DocumentoBase64: evidenceBase64,
+        IDClienteTrx: request.id,
+        Cedula: created.dni,
       },
     });
 

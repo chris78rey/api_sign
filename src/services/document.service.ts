@@ -17,7 +17,14 @@ export class DocumentService {
 
     const request = await prisma.request.findFirst({
       where: { id: args.requestId, organizationId: args.organizationId },
-      select: { id: true, organizationId: true, externalRequestId: true, status: true, finalDocumentPath: true },
+      select: {
+        id: true,
+        organizationId: true,
+        externalRequestId: true,
+        providerDocumentName: true,
+        status: true,
+        finalDocumentPath: true,
+      },
     });
 
     if (!request) {
@@ -31,10 +38,15 @@ export class DocumentService {
     const storageDir = getRequestStorageDir({ organizationId: request.organizationId, requestId: request.id });
     await fs.mkdir(storageDir, { recursive: true });
 
+    const documentName = request.providerDocumentName ?? 'original.pdf';
+
     const client = getOmniSwitchClient();
-    const res = await client.post<{ IdSolicitud: string }, { DocumentoBase64: string }>({
-      endpoint: '/SolicitudeGetFinalDocument',
-      payload: { IdSolicitud: request.externalRequestId },
+    const res = await client.post<
+      { IdSolicitud: string; IDSolicitude?: string; NombreDocumento: string },
+      { FileName?: string; DocumentoBase64: string }
+    >({
+      endpoint: '/api/v1/SolicitudeGetDocument',
+      payload: { IdSolicitud: request.externalRequestId, IDSolicitude: request.externalRequestId, NombreDocumento: documentName },
     });
 
     if (!res.ok) {

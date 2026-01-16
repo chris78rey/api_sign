@@ -18,6 +18,7 @@ export function buildRequestRouter(): Router {
 
   router.post('/', upload.single('pdf'), RequestController.create);
   router.get('/:id', RequestController.getById);
+  router.patch('/:id/payment', RequestController.recordPayment);
 
   return router;
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Firmas Debug Console</title>
@@ -12,7 +12,8 @@
       --accent: #bb86fc;
       --error: #cf6679;
       --success: #03dac6;
-      --font: 'Courier New', Courier, monospace;
+      --disabled: #555;
+      --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -22,30 +23,74 @@
       color: var(--text);
       font-family: var(--font);
       margin: 0;
-      padding: 20px;
+      padding: 0;
       font-size: 14px;
+      padding-bottom: 270px;
     }
 
     h1, h2, h3 { color: var(--accent); margin-top: 0; }
-    h1 { border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    h1 { margin: 0; font-size: 1.5rem; }
+    h2 { border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1.2rem; }
+    h3 { font-size: 1rem; margin-top: 15px; color: #aaa; }
+
+    /* Top Bar */
+    .top-bar {
+      background: #000;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .state-info {
+      display: flex;
+      gap: 20px;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+    }
+    .state-item span { font-weight: bold; color: var(--success); }
+    .state-item.missing span { color: var(--error); }
 
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 20px;
       max-width: 1400px;
-      margin: 0 auto;
+      margin: 20px auto;
+      padding: 0 20px;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      padding: 15px;
-      border-radius: 4px;
+      padding: 20px;
+      border-radius: 6px;
+      transition: opacity 0.3s;
     }
 
-    .row { margin-bottom: 10px; }
-    label { display: block; margin-bottom: 4px; color: #aaa; }
+    .card.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+      position: relative;
+    }
+    
+    .card.disabled::after {
+      content: "🔒 Bloqueado (Completar paso anterior)";
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .row { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; color: #bbb; font-size: 12px; font-weight: 600; }
     
     input[type="text"], 
     input[type="password"], 
@@ -53,40 +98,44 @@
     input[type="number"],
     select {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       background: #2c2c2c;
       border: 1px solid #444;
       color: var(--text);
       font-family: var(--font);
-      border-radius: 2px;
+      border-radius: 4px;
     }
+    
+    input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
 
     input[type="file"] {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       background: #2c2c2c;
       border: 1px solid #444;
       color: var(--text);
+      border-radius: 4px;
     }
 
     button {
       background: var(--accent);
       color: #000;
       border: none;
-      padding: 8px 16px;
+      padding: 10px 20px;
       cursor: pointer;
       font-weight: bold;
       font-family: var(--font);
-      text-transform: uppercase;
-      margin-top: 5px;
-      transition: opacity 0.2s;
+      border-radius: 4px;
+      width: 100%;
+      transition: all 0.2s;
     }
-    button:hover { opacity: 0.9; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { background: var(--disabled); cursor: not-allowed; opacity: 0.7; }
 
     .btn-green { background: var(--success); }
-    .btn-red { background: var(--error); }
-    .btn-small { padding: 4px 8px; font-size: 12px; }
+    .btn-red { background: var(--error); color: #fff; }
+    .btn-small { padding: 5px 10px; font-size: 11px; width: auto; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 
     #log {
       position: fixed;
@@ -94,145 +143,111 @@
       left: 0;
       right: 0;
       height: 250px;
-      background: #000;
+      background: #0d0d0d;
       border-top: 2px solid var(--accent);
       padding: 10px;
       overflow-y: auto;
       font-family: 'Consolas', monospace;
       font-size: 12px;
-      white-space: pre-wrap;
       z-index: 1000;
       box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
     }
 
-    .log-entry { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-    .log-status { font-weight: bold; }
-    .status-2xx { color: var(--success); }
-    .status-4xx { color: var(--error); }
-    .status-5xx { color: #ff0000; }
-
-    .token-display {
-      word-break: break-all;
-      font-size: 10px;
-      color: #888;
-      margin-top: 5px;
-      max-height: 40px;
-      overflow-y: auto;
-    }
-
-    body { padding-bottom: 270px; } /* Space for log */
-
+    .log-entry { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+    
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .full-width { grid-column: 1 / -1; }
+    .hint { font-size: 0.85rem; color: #888; margin-bottom: 10px; font-style: italic; }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      background: #333;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Firmas Debug Console</h1>
+  <div class="top-bar">
+    <h1>Firmas Debug</h1>
+    <div class="state-info">
+      <div class="state-item" id="st-token">Token: <span id="disp-token">❌</span></div>
+      <div class="state-item" id="st-req">Request ID: <span id="disp-req">None</span></div>
+      <div class="state-item" id="st-status">Status: <span id="disp-status">-</span></div>
+      <div class="state-item" id="st-sigs">Firmantes: <span id="disp-sigs">0</span></div>
+      <div class="state-item" id="st-payment">Pago: <span id="disp-payment">❌</span></div>
+      <div class="state-item">
+         <button class="btn-small btn-red" onclick="resetAll()">Reset</button>
+      </div>
+    </div>
+  </div>
 
   <div class="container">
     
-    <div class="card">
-      <h2>1. Authentication</h2>
+    <!-- Step 1: Authentication -->
+    <div class="card" id="step-auth">
+      <h2>1. Autenticación</h2>
+      <p class="hint">Regístrate o inicia sesión para obtener un token.</p>
       
-      <h3>Register Organization</h3>
       <div class="row">
-        <label>Org Name</label>
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="admin@acme.com">
+      </div>
+      <div class="row">
+        <label>Password</label>
+        <input type="password" id="loginPass" value="password123">
+      </div>
+      <div class="row grid-2">
+        <button onclick="login()">Login</button>
+        <button class="btn-outline" onclick="register()">Registrar Nuevo</button>
+      </div>
+      <div class="row" id="auth-extra" style="display:none; margin-top:10px;">
+        <label>Org Name (Solo para registro)</label>
         <input type="text" id="regOrgName" placeholder="Acme Corp">
       </div>
-      <div class="row grid-2">
-        <div>
-          <label>Email</label>
-          <input type="email" id="regEmail" placeholder="admin@acme.com">
-        </div>
-        <div>
-          <label>Password</label>
-          <input type="password" id="regPass" value="password123">
-        </div>
-      </div>
       <div class="row">
-        <button onclick="register()">Register</button>
-      </div>
-
-      <hr style="border-color: #333; margin: 20px 0;">
-
-      <h3>Login</h3>
-      <div class="row grid-2">
-        <div>
-          <label>Email</label>
-          <input type="email" id="loginEmail" placeholder="admin@acme.com">
-        </div>
-        <div>
-          <label>Password</label>
-          <input type="password" id="loginPass" value="password123">
-        </div>
-      </div>
-      <div class="row">
-        <button onclick="login()">Login</button>
-      </div>
-
-      <div class="row" style="margin-top: 15px;">
-        <label>Current Token (localStorage)</label>
-        <div class="token-display" id="tokenDisplay">None</div>
-        <button class="btn-small" onclick="copyToken()">Copy Token</button>
-        <button class="btn-small btn-red" onclick="logout()">Clear</button>
+        <label style="display:flex; justify-content:space-between;">
+           Token Actual 
+           <a href="#" onclick="copyToken(); return false;">Copiar</a>
+        </label>
+        <input type="text" id="rawToken" readonly style="font-size:10px; color:#666;">
       </div>
     </div>
 
-    <div class="card">
-      <h2>2. Organization Policy</h2>
-      <div class="row">
-        <button onclick="getPolicy()">Get Current Policy</button>
-      </div>
-      <div class="row" style="margin-top: 20px;">
-        <label>Evidence Required Default</label>
-        <select id="policyEvidence">
-          <option value="true">True</option>
-          <option value="false">False</option>
-        </select>
-      </div>
-      <div class="row">
-        <button class="btn-green" onclick="setPolicy()">Update Policy</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>3. Requests Flow</h2>
+    <!-- Step 2: Create Request -->
+    <div class="card" id="step-create">
+      <h2>2. Crear Petición (Upload PDF)</h2>
+      <p class="hint">Sube un PDF para iniciar el proceso.</p>
       
-      <h3>Create Request</h3>
       <div class="row">
-        <label>PDF File</label>
+        <label>Archivo PDF</label>
         <input type="file" id="reqFile" accept="application/pdf">
       </div>
       <div class="row">
-        <button onclick="createRequest()">Upload & Create</button>
+        <button onclick="createRequest()">Subir y Crear</button>
       </div>
-
-      <hr style="border-color: #333; margin: 20px 0;">
-
-      <h3>Current Request</h3>
+      
+      <hr style="border-color: #333; margin: 15px 0;">
+      
       <div class="row">
-        <label>Request ID</label>
-        <input type="text" id="currentReqId" placeholder="UUID from Create...">
-      </div>
-      <div class="row grid-2">
-        <button onclick="getRequest()">Get Details</button>
-        <button class="btn-green" onclick="sendRequest()">Send Request</button>
-      </div>
-      <div class="row">
-        <button onclick="downloadDoc()">Download Document</button>
+        <label>O usar existente (ID):</label>
+        <div style="display:flex; gap:5px;">
+           <input type="text" id="manualReqId" placeholder="Pegar UUID...">
+           <button class="btn-small" onclick="loadRequest()">Cargar</button>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>4. Add Signatory</h2>
-      <div class="row">
-        <label>Target Request ID</label>
-        <input type="text" id="sigReqId" placeholder="UUID...">
-      </div>
+    <!-- Step 3: Add Signatories -->
+    <div class="card" id="step-signatories">
+      <h2>3. Añadir Firmantes</h2>
+      <p class="hint">Añade al menos uno para poder enviar.</p>
+      
       <div class="row grid-2">
         <div>
-          <label>Name</label>
+          <label>Nombre</label>
           <input type="text" id="sigName" placeholder="John Doe">
         </div>
         <div>
@@ -246,28 +261,85 @@
           <input type="email" id="sigEmail" placeholder="john@example.com">
         </div>
         <div>
-          <label>Phone (Optional)</label>
+          <label>Teléfono</label>
           <input type="text" id="sigPhone">
         </div>
       </div>
       <div class="row grid-2">
         <div>
-          <label>X / Y (Opt)</label>
-          <input type="text" id="sigX" placeholder="100" style="width: 45%">
-          <input type="text" id="sigY" placeholder="200" style="width: 45%">
+          <label>Coordenadas X / Y (Opc)</label>
+          <div style="display:flex; gap:5px;">
+            <input type="number" id="sigX" placeholder="100">
+            <input type="number" id="sigY" placeholder="200">
+          </div>
         </div>
         <div>
-          <label>Page (Opt)</label>
-          <input type="number" id="sigPage" placeholder="1">
+           <label>Página (Opc)</label>
+           <input type="number" id="sigPage" placeholder="1">
         </div>
       </div>
       <div class="row">
-        <label>Evidence File (Optional)</label>
+        <label>Archivo Evidencia (Opcional)</label>
         <input type="file" id="sigEvidence">
       </div>
       <div class="row">
-        <button onclick="addSignatory()">Add Signatory</button>
+        <button onclick="addSignatory()" class="btn-outline">Añadir Firmante (+)</button>
       </div>
+    </div>
+
+    <!-- Step 4: Record Payment -->
+    <div class="card" id="step-payment">
+      <h2>4. Registrar Pago</h2>
+      <p class="hint">Registra el pago antes de enviar la petición.</p>
+      
+      <div class="row grid-2">
+        <div>
+          <label>Monto</label>
+          <input type="number" id="payAmount" step="0.01" placeholder="50.00">
+        </div>
+        <div>
+          <label>Moneda</label>
+          <input type="text" id="payCurrency" value="USD" placeholder="USD">
+        </div>
+      </div>
+      <div class="row">
+        <label>Referencia (Opcional)</label>
+        <input type="text" id="payReference" placeholder="REF-12345">
+      </div>
+      <div class="row">
+        <button onclick="recordPayment()" class="btn-outline">Registrar Pago</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Send & Download -->
+    <div class="card" id="step-send">
+      <h2>5. Enviar y Descargar</h2>
+      <p class="hint">Envía la petición para finalizar.</p>
+
+      <div class="row">
+        <button class="btn-green" id="btnSend" onclick="sendRequest()">Enviar Petición (Send)</button>
+      </div>
+      
+      <div class="row">
+        <div id="send-feedback" style="font-size:12px; color: #888; margin-bottom:5px;"></div>
+      </div>
+
+      <hr style="border-color: #333; margin: 15px 0;">
+      
+      <div class="row">
+         <label>Documento Final</label>
+         <button onclick="downloadDoc()" id="btnDownload">Descargar PDF</button>
+      </div>
+    </div>
+    
+    <!-- Config / Policy (Hidden by default or smaller) -->
+    <div class="card">
+       <h2>Admin: Policy</h2>
+       <div class="row grid-2">
+          <button class="btn-small" onclick="getPolicy()">Get Policy</button>
+          <button class="btn-small" onclick="togglePolicy()">Toggle Evidence Req</button>
+       </div>
+       <div id="policy-display" style="font-size:11px; color:#888; margin-top:5px;"></div>
     </div>
 
   </div>
@@ -277,9 +349,144 @@
   </div>
 
   <script>
-    let token = localStorage.getItem('firmas_token') || '';
-    updateTokenDisplay();
+    // --- STATE ---
+    const state = {
+      token: localStorage.getItem('firmas_token') || '',
+      requestId: localStorage.getItem('firmas_req_id') || '',
+      requestStatus: '', // CREATED, DOCUMENT_UPLOADED, SIGNATORIES_ADDED, SENT, SIGNED
+      signatoriesCount: 0,
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+      loading: false
+    };
 
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // Restore inputs
+      if(state.token) document.getElementById('rawToken').value = state.token;
+      if(state.requestId) {
+        document.getElementById('manualReqId').value = state.requestId;
+        // Try to fetch details to sync status
+        getRequest(state.requestId);
+      }
+      render();
+    });
+
+    function render() {
+      // 1. Update Top Bar
+      const dispToken = document.getElementById('disp-token');
+      const dispReq = document.getElementById('disp-req');
+      const dispStatus = document.getElementById('disp-status');
+      const dispSigs = document.getElementById('disp-sigs');
+      const dispPayment = document.getElementById('disp-payment');
+
+      if (state.token) {
+        dispToken.textContent = 'OK';
+        dispToken.parentElement.classList.remove('missing');
+      } else {
+        dispToken.textContent = 'Missing';
+        dispToken.parentElement.classList.add('missing');
+      }
+
+      dispReq.textContent = state.requestId || 'None';
+      if (!state.requestId) dispReq.parentElement.classList.add('missing');
+      else dispReq.parentElement.classList.remove('missing');
+
+      dispStatus.textContent = state.requestStatus || '-';
+      dispSigs.textContent = String(state.signatoriesCount ?? 0);
+      
+      const isPaid = state.amountPaidCents !== null && state.amountPaidCents !== undefined;
+      if (isPaid) {
+        const amt = (state.amountPaidCents / 100).toFixed(2);
+        dispPayment.textContent = `✅ $${amt} ${state.amountPaidCurrency || ''}`;
+        dispPayment.parentElement.classList.remove('missing');
+      } else {
+        dispPayment.textContent = '❌';
+        dispPayment.parentElement.classList.add('missing');
+      }
+
+      // 2. Gate Steps
+      const stepCreate = document.getElementById('step-create');
+      const stepSig = document.getElementById('step-signatories');
+      const stepPayment = document.getElementById('step-payment');
+      const stepSend = document.getElementById('step-send');
+      
+      // Step 2 needs Token
+      if (!state.token) stepCreate.classList.add('disabled');
+      else stepCreate.classList.remove('disabled');
+
+      // Step 3 needs Request ID
+      if (!state.requestId) stepSig.classList.add('disabled');
+      else stepSig.classList.remove('disabled');
+
+      // Step 4 (Payment) needs Request ID
+      if (!state.requestId) stepPayment.classList.add('disabled');
+      else stepPayment.classList.remove('disabled');
+
+      // Step 5 (Send) needs Request ID
+      if (!state.requestId) stepSend.classList.add('disabled');
+      else stepSend.classList.remove('disabled');
+
+      // Step 5 needs Signatories AND Payment
+      // Primary signal: signatoriesCount from GET /api/requests/:id
+      // Fallback: some statuses imply signatories exist.
+      const hasSignatories =
+        (typeof state.signatoriesCount === 'number' && state.signatoriesCount > 0) ||
+        ['SIGNATORIES_ADDED', 'SENT', 'SIGNED', 'FAILED'].includes(state.requestStatus);
+
+      const btnSend = document.getElementById('btnSend');
+      const sendFeedback = document.getElementById('send-feedback');
+
+      if (!state.requestId) {
+        btnSend.disabled = true;
+        btnSend.title = 'Crea o carga un Request primero';
+        sendFeedback.textContent = 'Bloqueado: falta Request ID.';
+      } else if (!hasSignatories) {
+        btnSend.disabled = true;
+        btnSend.title = 'Agrega al menos 1 firmante';
+        sendFeedback.textContent = 'Bloqueado: agrega al menos 1 firmante antes de enviar.';
+      } else if (!isPaid) {
+        btnSend.disabled = true;
+        btnSend.title = 'Requiere pago';
+        sendFeedback.textContent = 'Bloqueado: registra el pago antes de enviar.';
+      } else if (state.requestStatus === 'SENT' || state.requestStatus === 'SIGNED') {
+        btnSend.disabled = true;
+        btnSend.title = 'Ya enviada';
+        sendFeedback.textContent = 'La petición ya fue enviada.';
+      } else {
+        btnSend.disabled = false;
+        btnSend.title = 'Listo para enviar';
+        sendFeedback.textContent = `Listo para enviar (firmantes: ${state.signatoriesCount}, pagado).`;
+      }
+
+      // Download: only useful after sending (may still be PENDING).
+      const btnDownload = document.getElementById('btnDownload');
+      if (!state.requestId) {
+        btnDownload.disabled = true;
+      } else if (state.requestStatus === 'SENT' || state.requestStatus === 'SIGNED') {
+        btnDownload.disabled = false;
+      } else {
+        btnDownload.disabled = true;
+      }
+    }
+
+    function resetAll() {
+      if(!confirm('Reset token and request ID?')) return;
+      localStorage.removeItem('firmas_token');
+      localStorage.removeItem('firmas_req_id');
+      state.token = '';
+      state.requestId = '';
+      state.requestStatus = '';
+      state.signatoriesCount = 0;
+      state.amountPaidCents = null;
+      state.amountPaidCurrency = null;
+      document.getElementById('rawToken').value = '';
+      document.getElementById('manualReqId').value = '';
+      log('Reset', 'State cleared');
+      render();
+    }
+
+    // --- API HELPERS ---
     function log(title, data, isError = false) {
       const el = document.getElementById('log');
       const entry = document.createElement('div');
@@ -287,65 +494,29 @@
       const time = new Date().toISOString().split('T')[1].split('.')[0];
       
       let color = isError ? 'var(--error)' : 'var(--success)';
-      if (typeof data === 'object' && data.status) {
-        if (data.status >= 400) color = 'var(--error)';
-        else color = 'var(--success)';
-      }
+      if (typeof data === 'object' && data.status >= 400) color = 'var(--error)';
 
-      const status = data.status ? `[${data.status}] ` : '';
-      
       entry.innerHTML = `
-        <span style="color: #888">[${time}]</span> 
-        <strong style="color: ${color}">${title} ${status}</strong>
-        <div>${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}</div>
+        <span style="color: #666">[${time}]</span> 
+        <strong style="color: ${color}">${title}</strong>
+        <span>${typeof data === 'string' ? data : JSON.stringify(data)}</span>
       `;
       el.insertBefore(entry, el.firstChild);
     }
 
-    function getHeaders(contentType = 'application/json') {
+    function getHeaders(hasBody = true) {
       const h = {};
-      if (contentType) h['Content-Type'] = contentType;
-      if (token) h['Authorization'] = `Bearer ${token}`;
+      if (hasBody) h['Content-Type'] = 'application/json';
+      if (state.token) h['Authorization'] = `Bearer ${state.token}`;
       return h;
     }
 
-    function updateTokenDisplay() {
-      const el = document.getElementById('tokenDisplay');
-      el.textContent = token || 'No token found';
-      if(token) localStorage.setItem('firmas_token', token);
-      else localStorage.removeItem('firmas_token');
-    }
-
-    function syncReqId(id) {
-      if(!id) return;
-      document.getElementById('currentReqId').value = id;
-      document.getElementById('sigReqId').value = id;
-    }
-
-    async function register() {
-      const organizationName = document.getElementById('regOrgName').value;
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPass').value;
-
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ organizationName, email, password })
-        });
-        const data = await res.json();
-        log('Register', { status: res.status, ...data });
-        
-        if (res.ok && data.token) {
-          token = data.token;
-          updateTokenDisplay();
-        }
-      } catch (e) { log('Register Error', e.message, true); }
-    }
+    // --- ACTIONS ---
 
     async function login() {
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPass').value;
+      if(!email || !password) return log('Login', 'Missing credentials', true);
 
       try {
         const res = await fetch('/api/auth/login', {
@@ -357,61 +528,60 @@
         log('Login', { status: res.status, ...data });
 
         if (res.ok && data.token) {
-          token = data.token;
-          updateTokenDisplay();
+          state.token = data.token;
+          localStorage.setItem('firmas_token', data.token);
+          document.getElementById('rawToken').value = data.token;
+          render();
         }
       } catch (e) { log('Login Error', e.message, true); }
     }
 
-    function logout() {
-      token = '';
-      updateTokenDisplay();
-      log('Logout', 'Token cleared');
+    async function register() {
+      // Toggle extra fields visibility
+      const extra = document.getElementById('auth-extra');
+      if(extra.style.display === 'none') {
+        extra.style.display = 'block';
+        return; // Just show fields first
+      }
+
+      const organizationName = document.getElementById('regOrgName').value;
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPass').value;
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ organizationName, email, password })
+        });
+        const data = await res.json();
+        log('Register', { status: res.status, ...data });
+        
+        if (res.ok && data.token) {
+          state.token = data.token;
+          localStorage.setItem('firmas_token', data.token);
+          document.getElementById('rawToken').value = data.token;
+          render();
+        }
+      } catch (e) { log('Register Error', e.message, true); }
     }
 
     function copyToken() {
-      navigator.clipboard.writeText(token);
-      log('System', 'Token copied to clipboard');
-    }
-
-    async function getPolicy() {
-      try {
-        const res = await fetch('/api/admin/organization/policy', {
-          method: 'GET',
-          headers: getHeaders()
-        });
-        const data = await res.json();
-        log('Get Policy', { status: res.status, ...data });
-        if(res.ok && typeof data.evidenceRequiredDefault === 'boolean') {
-          document.getElementById('policyEvidence').value = data.evidenceRequiredDefault.toString();
-        }
-      } catch (e) { log('Get Policy Error', e.message, true); }
-    }
-
-    async function setPolicy() {
-      const val = document.getElementById('policyEvidence').value === 'true';
-      try {
-        const res = await fetch('/api/admin/organization/policy', {
-          method: 'PATCH',
-          headers: getHeaders(),
-          body: JSON.stringify({ evidenceRequiredDefault: val })
-        });
-        const data = await res.json();
-        log('Set Policy', { status: res.status, ...data });
-      } catch (e) { log('Set Policy Error', e.message, true); }
+      navigator.clipboard.writeText(state.token);
+      log('System', 'Token copied');
     }
 
     async function createRequest() {
       const fileInput = document.getElementById('reqFile');
-      if (!fileInput.files[0]) return log('Error', 'Select a PDF file first', true);
+      if (!fileInput.files[0]) return log('Create', 'Select PDF first', true);
 
       const formData = new FormData();
       formData.append('pdf', fileInput.files[0]);
 
       try {
-        // Note: No Content-Type header manually set for FormData, browser sets boundary
-        const h = getHeaders(null); 
-        
+        const h = {}; 
+        if(state.token) h['Authorization'] = `Bearer ${state.token}`;
+
         const res = await fetch('/api/requests', {
           method: 'POST',
           headers: h,
@@ -421,72 +591,44 @@
         log('Create Request', { status: res.status, ...data });
         
         if (res.ok && data.id) {
-          syncReqId(data.id);
+          state.requestId = data.id;
+          localStorage.setItem('firmas_req_id', data.id);
+          // Auto fetch to get status
+          await getRequest(data.id);
         }
-      } catch (e) { log('Create Request Error', e.message, true); }
+      } catch (e) { log('Create Error', e.message, true); }
     }
 
-    async function getRequest() {
-      const id = document.getElementById('currentReqId').value;
-      if (!id) return log('Error', 'No Request ID', true);
+    async function loadRequest() {
+      const id = document.getElementById('manualReqId').value.trim();
+      if(!id) return;
+      state.requestId = id;
+      localStorage.setItem('firmas_req_id', id);
+      await getRequest(id);
+    }
 
+    async function getRequest(id) {
+      if (!id) return;
       try {
         const res = await fetch(`/api/requests/${id}`, {
           method: 'GET',
-          headers: getHeaders()
+          headers: getHeaders(false)
         });
         const data = await res.json();
-        log('Get Request', { status: res.status, ...data });
+        // log('Get Request', { status: res.status, ...data });
+
+        if (res.ok && data.request) {
+          state.requestStatus = data.request.status;
+          state.signatoriesCount = typeof data.request.signatoriesCount === 'number' ? data.request.signatoriesCount : 0;
+          state.amountPaidCents = data.request.amountPaidCents;
+          state.amountPaidCurrency = data.request.amountPaidCurrency;
+          render();
+        }
       } catch (e) { log('Get Request Error', e.message, true); }
     }
 
-    async function sendRequest() {
-      const id = document.getElementById('currentReqId').value;
-      if (!id) return log('Error', 'No Request ID', true);
-
-      try {
-        const res = await fetch(`/api/requests/${id}/send`, {
-          method: 'POST',
-          headers: getHeaders()
-        });
-        const data = await res.json();
-        log('Send Request', { status: res.status, ...data });
-      } catch (e) { log('Send Request Error', e.message, true); }
-    }
-
-    async function downloadDoc() {
-      const id = document.getElementById('currentReqId').value;
-      if (!id) return log('Error', 'No Request ID', true);
-
-      // We cannot use window.open for auth headers usually, unless using cookies.
-      // But we are using Bearer token.
-      // So we fetch blob and create object URL.
-      try {
-        const res = await fetch(`/api/requests/${id}/document`, {
-          method: 'GET',
-          headers: getHeaders()
-        });
-        
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `document-${id}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          log('Download', { status: res.status, message: 'File downloaded' });
-        } else {
-          const data = await res.json();
-          log('Download Error', { status: res.status, ...data }, true);
-        }
-      } catch (e) { log('Download Error', e.message, true); }
-    }
-
     async function addSignatory() {
-      const id = document.getElementById('sigReqId').value;
-      if (!id) return log('Error', 'No Target Request ID', true);
+      if (!state.requestId) return log('Add Sig', 'No Request ID', true);
 
       const name = document.getElementById('sigName').value;
       const email = document.getElementById('sigEmail').value;
@@ -499,6 +641,8 @@
       
       const evidence = document.getElementById('sigEvidence').files[0];
 
+      if(!name || !email || !dni) return log('Add Sig', 'Missing Name, Email or DNI', true);
+
       const formData = new FormData();
       formData.append('name', name);
       formData.append('email', email);
@@ -510,15 +654,128 @@
       if(evidence) formData.append('evidence', evidence);
 
       try {
-        const h = getHeaders(null);
-        const res = await fetch(`/api/requests/${id}/signatories`, {
+        const h = {};
+        if(state.token) h['Authorization'] = `Bearer ${state.token}`;
+
+        const res = await fetch(`/api/requests/${state.requestId}/signatories`, {
           method: 'POST',
           headers: h,
           body: formData
         });
         const data = await res.json();
         log('Add Signatory', { status: res.status, ...data });
-      } catch (e) { log('Add Signatory Error', e.message, true); }
+
+        if(res.ok) {
+           // Refresh status to enable Send button
+           await getRequest(state.requestId);
+        }
+      } catch (e) { log('Add Sig Error', e.message, true); }
+    }
+
+    async function recordPayment() {
+      if (!state.requestId) return log('Payment', 'No Request ID', true);
+
+      const amountPaid = document.getElementById('payAmount').value;
+      const currency = document.getElementById('payCurrency').value;
+      const reference = document.getElementById('payReference').value;
+
+      if(!amountPaid) return log('Payment', 'Missing Amount', true);
+
+      try {
+        const res = await fetch(`/api/requests/${state.requestId}/payment`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ 
+            amountPaid: Number(amountPaid), 
+            currency: currency || 'USD',
+            reference: reference || undefined
+          })
+        });
+        const data = await res.json();
+        log('Record Payment', { status: res.status, ...data });
+
+        if(res.ok && data.request) {
+           // Update state
+           state.amountPaidCents = data.request.amountPaidCents;
+           state.amountPaidCurrency = data.request.amountPaidCurrency;
+           render();
+        } else if (res.ok) {
+           // Fallback if full request not returned, fetch it
+           await getRequest(state.requestId);
+        }
+      } catch (e) { log('Payment Error', e.message, true); }
+    }
+
+    async function sendRequest() {
+      if (!state.requestId) return;
+
+      try {
+        const res = await fetch(`/api/requests/${state.requestId}/send`, {
+          method: 'POST',
+          headers: getHeaders(false)
+        });
+        const data = await res.json();
+        log('Send Request', { status: res.status, ...data });
+        
+        if(res.ok) {
+          await getRequest(state.requestId);
+        }
+      } catch (e) { log('Send Error', e.message, true); }
+    }
+
+    async function downloadDoc() {
+      if (!state.requestId) return;
+
+      try {
+        const res = await fetch(`/api/requests/${state.requestId}/document`, {
+          method: 'GET',
+          headers: getHeaders(false)
+        });
+        
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `document-${state.requestId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          log('Download', 'File downloaded');
+        } else {
+          const data = await res.json();
+          log('Download Error', { status: res.status, ...data }, true);
+        }
+      } catch (e) { log('Download Error', e.message, true); }
+    }
+
+    async function getPolicy() {
+      try {
+        const res = await fetch('/api/admin/organization/policy', {
+           headers: getHeaders(false)
+        });
+        const data = await res.json();
+        document.getElementById('policy-display').textContent = JSON.stringify(data);
+      } catch(e) { console.error(e); }
+    }
+    
+    async function togglePolicy() {
+       // Quick toggle
+       try {
+        const res = await fetch('/api/admin/organization/policy', {
+           headers: getHeaders(false)
+        });
+        const data = await res.json();
+        const current = data.evidenceRequiredDefault;
+        
+        await fetch('/api/admin/organization/policy', {
+           method: 'PATCH',
+           headers: getHeaders(),
+           body: JSON.stringify({ evidenceRequiredDefault: !current })
+        });
+        getPolicy();
+        log('Policy', 'Toggled to ' + !current);
+       } catch(e) { log('Policy Error', e.message, true); }
     }
 
   </script>

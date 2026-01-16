@@ -14,7 +14,7 @@ export class OmniSwitchMockClient implements OmniSwitchClient {
   public async post<TPayload, TResponse>(
     args: OmniSwitchPostArgs<TPayload>
   ): Promise<OmniSwitchResult<TResponse>> {
-    const endpoint = args.endpoint;
+    const endpoint = args.endpoint.replace(/^\/?api\/v1\//i, '/');
 
     if (endpoint === '/SolicitudeCreate') {
       const externalRequestId = `REQ_${crypto.randomUUID()}`;
@@ -24,27 +24,36 @@ export class OmniSwitchMockClient implements OmniSwitchClient {
     }
 
     if (endpoint === '/SolicitudeCreateDocument') {
-      const payload = args.payload as { IdSolicitud?: string; DocumentoBase64?: string };
-      if (!payload.IdSolicitud || !state.requests.has(payload.IdSolicitud)) {
+      const payload = args.payload as {
+        IdSolicitud?: string;
+        IDSolicitude?: string;
+        DocumentoBase64?: string;
+        NombreDocumento?: string;
+      };
+
+      const id = payload.IdSolicitud ?? payload.IDSolicitude;
+      if (!id || !state.requests.has(id)) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
 
-      const request = state.requests.get(payload.IdSolicitud);
+      const request = state.requests.get(id);
       if (!request) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
 
       request.documentBase64 = payload.DocumentoBase64;
-      return { ok: true, data: { ok: true } as unknown as TResponse };
+      const fileName = payload.NombreDocumento ?? 'original.pdf';
+      return { ok: true, data: { FileName: fileName } as unknown as TResponse };
     }
 
     if (endpoint === '/SolicitudeCreateSignatory') {
-      const payload = args.payload as { IdSolicitud?: string };
-      if (!payload.IdSolicitud || !state.requests.has(payload.IdSolicitud)) {
+      const payload = args.payload as { IdSolicitud?: string; IDSolicitude?: string };
+      const id = payload.IdSolicitud ?? payload.IDSolicitude;
+      if (!id || !state.requests.has(id)) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
 
-      const request = state.requests.get(payload.IdSolicitud);
+      const request = state.requests.get(id);
       if (!request) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
@@ -54,12 +63,13 @@ export class OmniSwitchMockClient implements OmniSwitchClient {
     }
 
     if (endpoint === '/SolicitudeSend') {
-      const payload = args.payload as { IdSolicitud?: string };
-      if (!payload.IdSolicitud || !state.requests.has(payload.IdSolicitud)) {
+      const payload = args.payload as { IdSolicitud?: string; IDSolicitude?: string };
+      const id = payload.IdSolicitud ?? payload.IDSolicitude;
+      if (!id || !state.requests.has(id)) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
 
-      const request = state.requests.get(payload.IdSolicitud);
+      const request = state.requests.get(id);
       if (!request) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
@@ -76,13 +86,14 @@ export class OmniSwitchMockClient implements OmniSwitchClient {
       return { ok: true, data: { ok: true } as unknown as TResponse };
     }
 
-    if (endpoint === '/SolicitudeGetFinalDocument') {
-      const payload = args.payload as { IdSolicitud?: string };
-      if (!payload.IdSolicitud || !state.requests.has(payload.IdSolicitud)) {
+    if (endpoint === '/SolicitudeGetDocument') {
+      const payload = args.payload as { IdSolicitud?: string; IDSolicitude?: string; NombreDocumento?: string };
+      const id = payload.IdSolicitud ?? payload.IDSolicitude;
+      if (!id || !state.requests.has(id)) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }
 
-      const request = state.requests.get(payload.IdSolicitud);
+      const request = state.requests.get(id);
       if (!request) {
         return { ok: false, code: 'NOT_FOUND', message: 'Unknown IdSolicitud' };
       }

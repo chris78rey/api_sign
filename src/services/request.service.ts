@@ -69,11 +69,23 @@ export class RequestService {
     const client = getOmniSwitchClient();
 
     const createRes = await client.post<
-      { IDClienteTrx: string; Amount: number; BiometricRequired: number },
+      {
+        IdProcess: number;
+        PaymentRequired: string | number;
+        BiometricRequired: number;
+        amount: number;
+        IDClienteTrx?: string;
+      },
       { IdSolicitud: string }
     >({
-      endpoint: '/SolicitudeCreate',
-      payload: { IDClienteTrx: created.clientTrxId ?? created.id, Amount: 0, BiometricRequired: 0 },
+      endpoint: '/api/v1/SolicitudeCreate',
+      payload: {
+        IdProcess: Number(process.env.OMNISWITCH_ID_PROCESS ?? 0),
+        PaymentRequired: process.env.OMNISWITCH_PAYMENT_REQUIRED ?? 0,
+        BiometricRequired: Number(process.env.OMNISWITCH_BIOMETRIC_REQUIRED ?? 0),
+        amount: Number(process.env.OMNISWITCH_AMOUNT ?? 0),
+        IDClienteTrx: created.clientTrxId ?? created.id,
+      },
     });
 
     if (!createRes.ok) {
@@ -83,11 +95,23 @@ export class RequestService {
     const externalRequestId = createRes.data.IdSolicitud;
 
     const uploadRes = await client.post<
-      { IdSolicitud: string; DocumentoBase64: string },
-      { ok: boolean }
+      {
+        IdSolicitud: string;
+        IDSolicitude?: string;
+        NombreDocumento: string;
+        DocumentoBase64: string;
+        IDClienteTrx?: string;
+      },
+      { FileName?: string }
     >({
-      endpoint: '/SolicitudeCreateDocument',
-      payload: { IdSolicitud: externalRequestId, DocumentoBase64: base64 },
+      endpoint: '/api/v1/SolicitudeCreateDocument',
+      payload: {
+        IdSolicitud: externalRequestId,
+        IDSolicitude: externalRequestId,
+        NombreDocumento: args.uploadedPdf.originalname,
+        DocumentoBase64: base64,
+        IDClienteTrx: created.clientTrxId ?? created.id,
+      },
     });
 
     if (!uploadRes.ok) {
@@ -100,6 +124,7 @@ export class RequestService {
         externalRequestId,
         status: 'DOCUMENT_UPLOADED',
         sourceDocumentPath: path.relative(process.cwd(), destPath),
+        providerDocumentName: uploadRes.ok ? (uploadRes.data.FileName ?? args.uploadedPdf.originalname) : args.uploadedPdf.originalname,
       },
     });
 
@@ -126,7 +151,12 @@ export class RequestService {
         clientTrxId: true,
         status: true,
         evidenceRequired: true,
+        amountPaidCents: true,
+        amountPaidCurrency: true,
+        paymentReference: true,
+        paidAt: true,
         sourceDocumentPath: true,
+        providerDocumentName: true,
         finalDocumentPath: true,
         createdAt: true,
         updatedAt: true,
@@ -137,6 +167,75 @@ export class RequestService {
       throw new ApiError({ statusCode: 404, code: 'NOT_FOUND', message: 'Request not found' });
     }
 
-    return request;
+    const signatoriesCount = await prisma.signatory.count({
+      where: { requestId: request.id, request: { organizationId: args.organizationId } },
+    });
+
+    return { ...request, signatoriesCount };
+  }
+
+  public static async recordPayment(args: {
+    id: string;
+    organizationId: string;
+    actorUserId: string;
+    amountPaidCents: number;
+    currency: string;
+    reference?: string;
+  }) {
+    const prisma = getPrismaClient();
+
+    const existing = await prisma.request.findFirst({
+      where: { id: args.id, organizationId: args.organizationId },
+      select: { id: true, organizationId: true },
+    });
+
+    if (!existing) {
+      throw new ApiError({ statusCode: 404, code: 'NOT_FOUND', message: 'Request not found' });
+    }
+
+    const updated = await prisma.request.update({
+      where: { id: existing.id },
+      data: {
+        amountPaidCents: args.amountPaidCents,
+        amountPaidCurrency: args.currency,
+        paymentReference: args.reference ?? null,
+        paidAt: new Date(),
+      },
+      select: {
+        id: true,
+        organizationId: true,
+        externalRequestId: true,
+        clientTrxId: true,
+        status: true,
+        evidenceRequired: true,
+        amountPaidCents: true,
+        amountPaidCurrency: true,
+        paymentReference: true,
+        paidAt: true,
+        sourceDocumentPath: true,
+        providerDocumentName: true,
+        finalDocumentPath: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    await EventService.recordEvent({
+      requestId: updated.id,
+      organizationId: args.organizationId,
+      actorUserId: args.actorUserId,
+      type: 'PAYMENT_RECORDED',
+      metadata: {
+        amountPaidCents: args.amountPaidCents,
+        currency: args.currency,
+        reference: args.reference ?? undefined,
+      },
+    });
+
+    const signatoriesCount = await prisma.signatory.count({
+      where: { requestId: updated.id, request: { organizationId: args.organizationId } },
+    });
+
+    return { ...updated, signatoriesCount };
   }
 }

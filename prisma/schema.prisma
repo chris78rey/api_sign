@@ -42,11 +42,18 @@ model Request {
   signatories         Signatory[]
   events              RequestEvent[]
 
+  // Business: what the customer paid to the integrator for this request
+  amountPaidCents     Int?
+  amountPaidCurrency  String?
+  paymentReference    String?
+  paidAt              DateTime?
+
   @@index([organizationId, createdAt])
-  sourceDocumentPath  String?
-  finalDocumentPath   String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  sourceDocumentPath     String?
+  providerDocumentName   String?
+  finalDocumentPath      String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 }
 
 model Signatory {
@@ -91,6 +98,7 @@ enum RequestEventType {
   CREATED
   DOCUMENT_UPLOADED
   SIGNATORIES_ADDED
+  PAYMENT_RECORDED
   SENT
   SIGNED
   FAILED
